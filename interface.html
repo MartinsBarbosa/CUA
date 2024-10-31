@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keystroke Data Collector</title>
+</head>
+<body>
+    <!-- Heading for the typing area -->
+    <h1>Type in the box below:</h1>
+
+    <!-- Text area where the user types to collect typing data -->
+    <textarea id="typingArea" rows="10" cols="50" placeholder="Start typing..."></textarea>
+    
+    <!-- Button to trigger data download as a JSON file -->
+    <button onclick="downloadData()">Download Data</button>
+
+    <script>
+        // Object to hold collected typing data (dwell times and flight times)
+        let typingData = { dwell: [], flight: [] };
+
+        // Variables to track key press and release times
+        let lastKeyReleaseTime = null; // Time of the last key release
+        let keyPressTime = {}; // Object to store press time for each key
+
+        // Event listener for keydown (when a key is pressed)
+        document.getElementById('typingArea').addEventListener('keydown', function(event) {
+            const key = event.key; // The key being pressed
+            keyPressTime[key] = performance.now(); // Record the current time for the key press
+
+            // If this isn't the first key pressed, calculate the flight time from the last key release
+            if (lastKeyReleaseTime !== null) {
+                let flightTime = (keyPressTime[key] - lastKeyReleaseTime) / 1000; // Calculate in seconds
+                typingData.flight.push(flightTime.toFixed(3)); // Add flight time to the data, rounded to 3 decimals
+                
+                // Log flight data for verification
+                console.log("Flight time recorded:", flightTime.toFixed(3));
+            }
+        });
+
+        // Event listener for keyup (when a key is released)
+        document.getElementById('typingArea').addEventListener('keyup', function(event) {
+            const key = event.key; // The key being released
+            const releaseTime = performance.now(); // Record the time of release
+
+            // Calculate dwell time (time the key was held down)
+            let dwellTime = (releaseTime - keyPressTime[key]) / 1000; // Calculate in seconds
+            typingData.dwell.push(dwellTime.toFixed(3)); // Add dwell time to the data, rounded to 3 decimals
+
+            // Log dwell data for verification
+            console.log("Dwell time recorded:", dwellTime.toFixed(3));
+
+            // Update lastKeyReleaseTime for calculating the next flight time
+            lastKeyReleaseTime = releaseTime;
+        });
+
+        console.log("Typing data being downloaded:", typingData);
+
+
+        // Function to trigger download of the collected typing data
+        function downloadData() {
+            // Convert the typing data to JSON format
+            const dataStr = JSON.stringify(typingData, null, 2);
+
+            // Create a Blob object from the JSON data
+            const blob = new Blob([dataStr], { type: 'application/json' });
+
+            // Generate a URL for the Blob and create an anchor (<a>) element
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+
+            // Set the download attribute with a filename
+            a.href = url;
+            a.download = 'keystroke_data.json';
+
+            // Programmatically click the anchor to trigger the download
+            document.body.appendChild(a);
+            a.click();
+
+            // Clean up by removing the anchor and revoking the Blob URL
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            // Log final typing data to console for verification before download
+            console.log("Final typing data:", typingData);
+        }
+    </script>
+</body>
+</html>
